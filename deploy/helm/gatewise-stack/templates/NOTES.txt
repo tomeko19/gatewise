@@ -1,0 +1,18 @@
+Gatewise Stack (optional)
+
+This chart provides a standard BYOL license pattern.
+It does NOT ship any real licenses.
+
+Kong Enterprise BYOL:
+- Create secret: kubectl -n <ns> create secret generic kong-enterprise-license --from-file=license.json=./license.json
+- Then set:
+  kong.edition=enterprise
+  kong.license.enabled=true
+  kong.license.existingSecret=kong-enterprise-license
+
+Kafka Confluent BYOL:
+- Create secret: kubectl -n <ns> create secret generic confluent-license --from-file=license.txt=./license.txt
+- Then set:
+  kafka.distribution=confluent
+  kafka.license.enabled=true
+  kafka.license.existingSecret=confluent-license

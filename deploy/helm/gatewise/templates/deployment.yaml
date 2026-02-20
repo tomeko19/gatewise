@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gatewise.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "gatewise.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "gatewise.name" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "gatewise.name" . }}
+    spec:
+      containers:
+        - name: gatewise
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: GATEWISE_ADDR
+              value: {{ .Values.env.GATEWISE_ADDR | quote }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10

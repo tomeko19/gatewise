@@ -1,0 +1,6 @@
+apiVersion: v2
+name: gatewise-stack
+description: Optional quickstart stack for Gatewise (Kong/Keycloak/Kafka) with BYOL license hooks
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

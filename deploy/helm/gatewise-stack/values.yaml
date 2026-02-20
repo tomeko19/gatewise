@@ -1,0 +1,20 @@
+kong:
+  enabled: false
+  edition: oss # oss|enterprise
+  license:
+    enabled: false
+    existingSecret: ""
+    secretKey: "license.json"
+    envVar: "KONG_LICENSE_DATA"
+
+keycloak:
+  enabled: false
+  edition: oss
+
+kafka:
+  enabled: false
+  distribution: apache # apache|confluent
+  license:
+    enabled: false
+    existingSecret: ""
+    secretKey: "license.txt"
