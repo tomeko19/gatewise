@@ -1,0 +1,22 @@
+# Go
+bin/
+dist/
+*.exe
+*.test
+*.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Helm
+**/charts/
+**/Chart.lock
+
+# Local env
+.env
+
