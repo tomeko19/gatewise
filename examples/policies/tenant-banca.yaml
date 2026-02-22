@@ -1,0 +1,6 @@
+tenant: banca
+role: admin
+permissions:
+  - api:terminal:create
+  - kafka:topic:banca-events:produce
+  - k8s:namespace:banca:admin

@@ -4,6 +4,8 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"github.com/tomeko19/gatewise/internal/policy/http"
+	"github.com/tomeko19/gatewise/internal/policy/store/mem"
 	"log"
 	"net/http"
 	"time"
@@ -44,6 +46,11 @@ func NewHandler() http.Handler {
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
+
+	// v1 policy routes
+	pstore := mem.New()
+	ph := http.New(pstore)
+	ph.Register(mux)
 
 	// root endpoint
 	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
