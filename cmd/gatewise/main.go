@@ -1,3 +1,4 @@
+// Command gatewise starts the Gatewise API server.
 package main
 
 import (
