@@ -4,16 +4,17 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"github.com/tomeko19/gatewise/internal/policy/http"
-	"github.com/tomeko19/gatewise/internal/policy/store/mem"
 	"log"
-	"net/http"
+	nethttp "net/http"
 	"time"
+
+	policyapi "github.com/tomeko19/gatewise/internal/policy/http"
+	"github.com/tomeko19/gatewise/internal/policy/store/mem"
 )
 
 // Server wraps the HTTP server implementation for Gatewise.
 type Server struct {
-	httpServer *http.Server
+	httpServer *nethttp.Server
 }
 
 // HealthResponse is returned by the /healthz endpoint.
@@ -24,21 +25,20 @@ type HealthResponse struct {
 
 // New creates a new Gatewise HTTP server listening on addr.
 func New(addr string) *Server {
-	s := &http.Server{
+	s := &nethttp.Server{
 		Addr:              addr,
 		Handler:           NewHandler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-
 	return &Server{httpServer: s}
 }
 
 // NewHandler builds the HTTP handler (routes) for Gatewise.
-func NewHandler() http.Handler {
-	mux := http.NewServeMux()
+func NewHandler() nethttp.Handler {
+	mux := nethttp.NewServeMux()
 
 	// health endpoint
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("/healthz", func(w nethttp.ResponseWriter, _ *nethttp.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := HealthResponse{
 			Status:    "ok",
@@ -47,14 +47,18 @@ func NewHandler() http.Handler {
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 
-	// v1 policy routes
+	// ✅ register policy routes
 	pstore := mem.New()
-	ph := http.New(pstore)
+	ph := policyapi.New(pstore)
 	ph.Register(mux)
 
-	// root endpoint
-	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
+	// root endpoint (strict)
+	mux.HandleFunc("/", func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		if r.URL.Path != "/" {
+			nethttp.NotFound(w, r)
+			return
+		}
+		w.WriteHeader(nethttp.StatusOK)
 		_, _ = w.Write([]byte("gatewise api\n"))
 	})
 

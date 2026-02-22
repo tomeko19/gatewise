@@ -1,4 +1,5 @@
-package http
+// Package policyapi provides HTTP handlers for policy management.
+package policyapi
 
 import (
 	"encoding/json"
@@ -9,10 +10,12 @@ import (
 	"github.com/tomeko19/gatewise/internal/policy/store/mem"
 )
 
+// Handler serves policy-related HTTP endpoints.
 type Handler struct {
 	store *mem.Store
 }
 
+// New creates a new policy HTTP handler.
 func New(store *mem.Store) *Handler {
 	return &Handler{store: store}
 }
@@ -42,12 +45,15 @@ func (h *Handler) createPolicy(w nethttp.ResponseWriter, r *nethttp.Request) {
 
 	p, err := dsl.ParsePolicyYAML(body)
 	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(nethttp.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
 	h.store.Upsert(p)
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(nethttp.StatusCreated)
 	_ = json.NewEncoder(w).Encode(p)
 }
