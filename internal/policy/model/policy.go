@@ -1,3 +1,4 @@
+// Package model provides data structures for policy management.
 package model
 
 // Policy represents a multi-tenant authorization policy definition.
