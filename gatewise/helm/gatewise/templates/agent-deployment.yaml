@@ -1,0 +1,63 @@
+{{- if .Values.agent.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gatewise.fullname" . }}-agent
+  labels:
+    {{- include "gatewise.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent
+spec:
+  replicas: {{ .Values.agent.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "gatewise.agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "gatewise.agent.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "gatewise.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.security.podSecurityContext | nindent 8 }}
+      containers:
+        - name: agent
+          image: "{{ .Values.agent.image.repository }}:{{ .Values.agent.image.tag }}"
+          imagePullPolicy: {{ .Values.agent.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.security.containerSecurityContext | nindent 12 }}
+          env:
+            - name: GATEWISE_SERVER_URL
+              value: "http://{{ include "gatewise.fullname" . }}-control-plane:8001"
+            - name: RECONCILE_INTERVAL
+              value: {{ .Values.agent.reconcile.interval | quote }}
+            - name: SELF_HEALING_ENABLED
+              value: {{ .Values.agent.selfHealing.enabled | quote }}
+            - name: SELF_HEALING_INTERVAL
+              value: {{ .Values.agent.selfHealing.interval | quote }}
+            - name: SELF_HEALING_AUTO_REPAIR
+              value: {{ .Values.agent.selfHealing.autoRepair | quote }}
+            - name: JIT_ENABLED
+              value: {{ .Values.agent.jit.enabled | quote }}
+            - name: JIT_MAX_DURATION
+              value: {{ .Values.agent.jit.maxDuration | quote }}
+            - name: JIT_DEFAULT_DURATION
+              value: {{ .Values.agent.jit.defaultDuration | quote }}
+          resources:
+            {{- toYaml .Values.agent.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

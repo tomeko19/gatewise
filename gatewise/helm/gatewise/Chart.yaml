@@ -1,0 +1,37 @@
+apiVersion: v2
+name: gatewise
+description: Gatewise - Unified Access Layer for Kubernetes, Kafka, and Kong
+type: application
+version: 0.2.0
+appVersion: "0.2.0-alpha"
+
+maintainers:
+  - name: Gatewise Team
+    email: team@gatewise.io
+
+keywords:
+  - access-control
+  - kubernetes
+  - kafka
+  - kong
+  - rbac
+  - security
+  - policy
+
+home: https://gatewise.io
+sources:
+  - https://github.com/gatewise/gatewise
+
+dependencies:
+  - name: postgresql
+    version: "~12.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: kafka
+    version: "~26.0"
+    repository: https://charts.bitnami.com/bitnami
+    condition: kafka.enabled
+  - name: kong
+    version: "~2.0"
+    repository: https://charts.konghq.com
+    condition: kong.enabled

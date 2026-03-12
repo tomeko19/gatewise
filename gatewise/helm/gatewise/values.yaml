@@ -1,0 +1,244 @@
+# Gatewise Helm Chart Configuration
+# BYOI (Bring Your Own Infrastructure) - Set enabled: false to use external services
+
+# ============ Global Settings ============
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# ============ Control Plane ============
+controlPlane:
+  replicaCount: 1
+  
+  image:
+    repository: gatewise/control-plane
+    tag: "0.2.0-alpha"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8001
+  
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: gatewise.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Environment variables
+  env:
+    LOG_LEVEL: info
+  
+  # License configuration
+  license:
+    key: ""  # Set to ENT-xxx for Enterprise features
+    secretName: ""  # Or reference existing secret
+
+# ============ Agent (In-Cluster) ============
+agent:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: gatewise/agent
+    tag: "0.2.0-alpha"
+    pullPolicy: IfNotPresent
+  
+  # Reconciliation settings
+  reconcile:
+    interval: 30s
+    retryLimit: 3
+  
+  # Self-healing (Enterprise)
+  selfHealing:
+    enabled: false  # Requires Enterprise license
+    interval: 5m
+    autoRepair: true
+  
+  # JIT Access (Enterprise)
+  jit:
+    enabled: false  # Requires Enterprise license
+    maxDuration: 24h
+    defaultDuration: 2h
+    maxRenewals: 2
+  
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+  
+  serviceAccount:
+    create: true
+    name: gatewise-agent
+    annotations: {}
+  
+  # RBAC for agent
+  rbac:
+    create: true
+    clusterRole: true  # Set to false for namespace-scoped
+
+# ============ Dashboard ============
+dashboard:
+  enabled: true
+  replicaCount: 1
+  
+  image:
+    repository: gatewise/dashboard
+    tag: "0.2.0-alpha"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 3000
+  
+  ingress:
+    enabled: false
+    className: "nginx"
+    annotations: {}
+    hosts:
+      - host: dashboard.gatewise.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+# ============ PostgreSQL (BYOI) ============
+postgresql:
+  # Set to false to use external PostgreSQL
+  enabled: true
+  
+  # Embedded PostgreSQL settings (when enabled: true)
+  auth:
+    username: gatewise
+    password: gatewise123
+    database: gatewise
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+  
+  # External PostgreSQL settings (when enabled: false)
+  external:
+    host: ""
+    port: 5432
+    username: ""
+    password: ""
+    database: ""
+    sslMode: require
+    # Or use existing secret
+    existingSecret: ""
+    existingSecretKey: "postgresql-password"
+
+# ============ Kafka (BYOI - Enterprise) ============
+kafka:
+  # Set to false to use external Kafka
+  enabled: false
+  
+  # Embedded Kafka settings (when enabled: true)
+  replicaCount: 1
+  
+  # External Kafka settings (when enabled: false)
+  external:
+    brokers: []
+    # Example: ["kafka-1:9092", "kafka-2:9092"]
+    sasl:
+      enabled: false
+      mechanism: PLAIN
+      username: ""
+      password: ""
+    tls:
+      enabled: false
+      certFile: ""
+      keyFile: ""
+      caFile: ""
+    # Or use existing secret
+    existingSecret: ""
+
+# ============ Kong (BYOI - Enterprise) ============
+kong:
+  # Set to false to use external Kong
+  enabled: false
+  
+  # Embedded Kong settings (when enabled: true)
+  proxy:
+    type: LoadBalancer
+  admin:
+    enabled: true
+    type: ClusterIP
+  
+  # External Kong settings (when enabled: false)
+  external:
+    adminUrl: ""
+    # Example: "http://kong-admin:8001"
+    apiKey: ""
+    # Or use existing secret
+    existingSecret: ""
+    existingSecretKey: "kong-admin-token"
+
+# ============ Keycloak (BYOI - Enterprise) ============
+keycloak:
+  enabled: false
+  
+  external:
+    url: ""
+    realm: ""
+    clientId: ""
+    clientSecret: ""
+    existingSecret: ""
+
+# ============ Cerbos (BYOI - Enterprise) ============
+cerbos:
+  enabled: false
+  
+  external:
+    url: ""
+    # Example: "http://cerbos:3592"
+
+# ============ Monitoring ============
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    labels: {}
+  
+  prometheusRule:
+    enabled: false
+    rules: []
+
+# ============ Security ============
+security:
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
+# ============ Node Selection ============
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
