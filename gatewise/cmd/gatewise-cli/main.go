@@ -45,12 +45,41 @@ func main() {
 
 // parseCmd creates the 'parse' command
 func parseCmd() *cobra.Command {
+	var parseAll bool
 	cmd := &cobra.Command{
 		Use:   "parse [file]",
 		Short: "Parse and display a policy file",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			parser := policy.NewParser(strict)
+			
+			if parseAll {
+				// Parse all documents in the file
+				file, err := os.Open(args[0])
+				if err != nil {
+					return fmt.Errorf("failed to open file: %w", err)
+				}
+				defer file.Close()
+				
+				policies, err := parser.ParseMultiple(file)
+				if err != nil {
+					return fmt.Errorf("failed to parse: %w", err)
+				}
+				
+				fmt.Printf("Found %d policy document(s)\n---\n", len(policies))
+				for i, p := range policies {
+					fmt.Printf("# Document %d\n", i+1)
+					if err := outputPolicy(p); err != nil {
+						return err
+					}
+					if i < len(policies)-1 {
+						fmt.Println("---")
+					}
+				}
+				return nil
+			}
+			
+			// Parse only first document
 			p, err := parser.ParseFile(args[0])
 			if err != nil {
 				return fmt.Errorf("failed to parse: %w", err)
@@ -59,6 +88,7 @@ func parseCmd() *cobra.Command {
 			return outputPolicy(p)
 		},
 	}
+	cmd.Flags().BoolVarP(&parseAll, "all", "a", false, "Parse all documents in multi-document YAML")
 	return cmd
 }
 
