@@ -3,6 +3,7 @@ package connector
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/gatewise/gatewise/pkg/license"
@@ -118,14 +119,30 @@ func (f *Factory) createKubernetesConnector(config *ConnectorConfig) (Connector,
 
 // createKafkaConnector creates Kafka connector based on mode
 func (f *Factory) createKafkaConnector(config *ConnectorConfig) (Connector, error) {
-	// TODO: Implement Kafka connector
-	return nil, fmt.Errorf("kafka connector not yet implemented")
+	brokers := []string{}
+	if brokersStr, ok := config.Credentials["brokers"]; ok {
+		brokers = strings.Split(brokersStr, ",")
+	}
+	if config.Endpoint != "" {
+		brokers = append(brokers, config.Endpoint)
+	}
+	if len(brokers) == 0 {
+		return nil, fmt.Errorf("no Kafka brokers configured")
+	}
+	return NewKafkaConnector(brokers, config.Mode)
 }
 
 // createKongConnector creates Kong connector based on mode  
 func (f *Factory) createKongConnector(config *ConnectorConfig) (Connector, error) {
-	// TODO: Implement Kong connector
-	return nil, fmt.Errorf("kong connector not yet implemented")
+	adminURL := config.Endpoint
+	if adminURL == "" {
+		adminURL = config.Credentials["admin_url"]
+	}
+	if adminURL == "" {
+		return nil, fmt.Errorf("no Kong admin URL configured")
+	}
+	apiKey := config.Credentials["api_key"]
+	return NewKongConnector(adminURL, apiKey, config.Mode)
 }
 
 // GetConnector returns an existing connector
