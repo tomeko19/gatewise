@@ -1,0 +1,65 @@
+# Gatewise Policy Example: Just-In-Time Emergency Access
+# This policy demonstrates temporary access for emergency interventions
+
+apiVersion: gatewise.io/v1alpha1
+kind: AccessPolicy
+metadata:
+  name: emergency-production-access
+  namespace: production
+  labels:
+    type: emergency
+    environment: production
+    sensitivity: high
+  annotations:
+    description: "Emergency JIT access for production debugging"
+    owner: platform-team
+spec:
+  team: sre-oncall
+  
+  targets:
+    # Full Kubernetes production access
+    - type: kubernetes
+      name: k8s-production-full
+      actions:
+        - read
+        - write
+        - delete
+        - exec
+      kubernetes:
+        namespace: production
+        resources:
+          - "*"
+        verbs:
+          - "*"
+    
+    # Kafka production topics
+    - type: kafka
+      name: kafka-production-debug
+      actions:
+        - consume
+        - describe
+      kafka:
+        topics:
+          - "*"
+        operations:
+          - READ
+          - DESCRIBE
+    
+    # Kong admin access
+    - type: kong
+      name: kong-admin-access
+      actions:
+        - read
+        - configure
+      kong:
+        routes:
+          - "*"
+        services:
+          - "*"
+  
+  # Just-In-Time Access Configuration
+  jit:
+    enabled: true
+    duration: "2h"           # Access expires after 2 hours
+    maxRenewals: 2            # Can be renewed up to 2 times
+    approvalRequired: true    # Requires manager approval

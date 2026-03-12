@@ -1,0 +1,111 @@
+# Gatewise Policy Example: Marketing Team Access
+# This policy grants the Marketing team access to Kubernetes, Kafka, and Kong resources
+
+apiVersion: gatewise.io/v1alpha1
+kind: AccessPolicy
+metadata:
+  name: marketing-team-access
+  namespace: marketing
+  labels:
+    team: marketing
+    environment: production
+  annotations:
+    description: "Full access policy for Marketing team"
+spec:
+  team: marketing
+  members:
+    - alice@company.com
+    - bob@company.com
+    - charlie@company.com
+  
+  targets:
+    # Kubernetes Access
+    - type: kubernetes
+      name: k8s-marketing-namespace
+      actions:
+        - read
+        - write
+        - delete
+      kubernetes:
+        namespace: marketing-prod
+        resources:
+          - pods
+          - deployments
+          - services
+          - configmaps
+        verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+    
+    # Kafka Access
+    - type: kafka
+      name: kafka-marketing-topics
+      actions:
+        - produce
+        - consume
+      kafka:
+        topics:
+          - marketing-events
+          - user-analytics
+          - ad-impressions
+        operations:
+          - READ
+          - WRITE
+          - DESCRIBE
+        consumerGroup: marketing-consumers
+    
+    # Kong Gateway Access
+    - type: kong
+      name: kong-marketing-api
+      actions:
+        - manage
+      kong:
+        routes:
+          - /api/v1/marketing/*
+          - /api/v1/ads/*
+        services:
+          - marketing-api
+          - ads-api
+        plugins:
+          - name: jwt
+            config:
+              key_claim_name: kid
+          - name: rate-limiting
+            config:
+              minute: 1000
+              policy: local
+
+---
+# TeamBinding Example
+apiVersion: gatewise.io/v1alpha1
+kind: TeamBinding
+metadata:
+  name: marketing-team-definition
+  labels:
+    department: marketing
+spec:
+  team: marketing
+  members:
+    - alice@company.com
+    - bob@company.com
+    - charlie@company.com
+
+---
+# ResourceQuota Example
+apiVersion: gatewise.io/v1alpha1
+kind: ResourceQuota
+metadata:
+  name: marketing-quota
+  namespace: marketing-prod
+spec:
+  quotas:
+    cpu: "4"
+    memory: "8Gi"
+    pods: 20
+    services: 10
+    secrets: 20

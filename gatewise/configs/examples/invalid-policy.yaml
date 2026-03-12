@@ -1,0 +1,7 @@
+# Invalid policy for testing validation
+apiVersion: invalid-version
+kind: UnknownKind
+metadata:
+  name: INVALID_NAME_UPPERCASE
+spec:
+  team: ""
