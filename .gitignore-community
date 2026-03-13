@@ -1,0 +1,91 @@
+# Gatewise Community Edition gitignore
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+gatewise-server
+gatewise-cli
+gatewise-operator
+bin/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.txt
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+*.env
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+dist/
+build/
+
+# Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+build/
+.pnp
+.pnp.js
+
+# Testing
+test_reports/
+.nyc_output/
+
+# Enterprise code (not in Community repo)
+enterprise/
+internal/connector/kafka.go
+internal/connector/kong.go
+internal/jit/
+internal/reconciler/drift.go
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+
+# Helm
+*.tgz
+
+# Docker
+.dockerignore
+
+# CI/CD
+.gitlab-ci.yml

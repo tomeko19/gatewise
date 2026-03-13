@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      
+      - name: Get version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+      - name: Build binaries
+        run: |
+          cd gatewise
+          
+          # Build server
+          GOOS=linux GOARCH=amd64 go build -o ../bin/gatewise-server-linux-amd64 ./cmd/gatewise-server
+          GOOS=darwin GOARCH=amd64 go build -o ../bin/gatewise-server-darwin-amd64 ./cmd/gatewise-server
+          GOOS=darwin GOARCH=arm64 go build -o ../bin/gatewise-server-darwin-arm64 ./cmd/gatewise-server
+          GOOS=windows GOARCH=amd64 go build -o ../bin/gatewise-server-windows-amd64.exe ./cmd/gatewise-server
+          
+          # Build CLI
+          GOOS=linux GOARCH=amd64 go build -o ../bin/gatewise-cli-linux-amd64 ./cmd/gatewise-cli
+          GOOS=darwin GOARCH=amd64 go build -o ../bin/gatewise-cli-darwin-amd64 ./cmd/gatewise-cli
+          GOOS=darwin GOARCH=arm64 go build -o ../bin/gatewise-cli-darwin-arm64 ./cmd/gatewise-cli
+          GOOS=windows GOARCH=amd64 go build -o ../bin/gatewise-cli-windows-amd64.exe ./cmd/gatewise-cli
+          
+          # Build Operator
+          GOOS=linux GOARCH=amd64 go build -o ../bin/gatewise-operator-linux-amd64 ./cmd/gatewise-operator
+          GOOS=darwin GOARCH=amd64 go build -o ../bin/gatewise-operator-darwin-amd64 ./cmd/gatewise-operator
+          GOOS=darwin GOARCH=arm64 go build -o ../bin/gatewise-operator-darwin-arm64 ./cmd/gatewise-operator
+      
+      - name: Create checksums
+        run: |
+          cd bin
+          sha256sum * > checksums.txt
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.version.outputs.VERSION }}
+          body: |
+            ## Gatewise ${{ steps.version.outputs.VERSION }}
+            
+            ### Download
+            
+            **Server**:
+            - Linux: `gatewise-server-linux-amd64`
+            - macOS (Intel): `gatewise-server-darwin-amd64`
+            - macOS (Apple Silicon): `gatewise-server-darwin-arm64`
+            - Windows: `gatewise-server-windows-amd64.exe`
+            
+            **CLI**:
+            - Linux: `gatewise-cli-linux-amd64`
+            - macOS (Intel): `gatewise-cli-darwin-amd64`
+            - macOS (Apple Silicon): `gatewise-cli-darwin-arm64`
+            - Windows: `gatewise-cli-windows-amd64.exe`
+            
+            **Operator**:
+            - Linux: `gatewise-operator-linux-amd64`
+            - macOS (Intel): `gatewise-operator-darwin-amd64`
+            - macOS (Apple Silicon): `gatewise-operator-darwin-arm64`
+            
+            ### Checksums
+            See `checksums.txt` for SHA256 checksums.
+            
+            ### Installation
+            
+            ```bash
+            # Linux
+            wget https://github.com/gatewise-io/gatewise/releases/download/${{ steps.version.outputs.VERSION }}/gatewise-server-linux-amd64
+            chmod +x gatewise-server-linux-amd64
+            ./gatewise-server-linux-amd64 --version
+            ```
+            
+            ### Helm Chart
+            
+            ```bash
+            helm repo add gatewise https://gatewise-io.github.io/gatewise-helm
+            helm install gatewise gatewise/gatewise --version ${{ steps.version.outputs.VERSION }}
+            ```
+          files: |
+            bin/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
