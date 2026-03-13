@@ -1,0 +1,101 @@
+apiVersion: gatewise.io/v1
+kind: GatewisePolicy
+metadata:
+  name: marketing-team-access
+  namespace: default
+spec:
+  team: marketing
+  
+  kubernetes:
+    namespaces:
+      - name: marketing-prod
+        labels:
+          team: marketing
+          environment: production
+        quotas:
+          cpu: "4"
+          memory: "8Gi"
+          pods: "20"
+      
+      - name: marketing-staging
+        labels:
+          team: marketing
+          environment: staging
+        quotas:
+          cpu: "2"
+          memory: "4Gi"
+          pods: "10"
+    
+    rbac:
+      - role: admin
+        subjects:
+          - kind: User
+            name: alice@company.com
+          - kind: User
+            name: bob@company.com
+      
+      - role: view
+        subjects:
+          - kind: Group
+            name: marketing-team
+
+  kafka:
+    topics:
+      - name: marketing-events
+        partitions: 3
+        replication: 2
+        config:
+          retention.ms: "604800000"  # 7 days
+          compression.type: "lz4"
+      
+      - name: marketing-analytics
+        partitions: 6
+        replication: 3
+    
+    acls:
+      - principal: User:alice
+        operations:
+          - Read
+          - Write
+        topics:
+          - marketing-events
+          - marketing-analytics
+      
+      - principal: Group:marketing-team
+        operations:
+          - Read
+        topics:
+          - marketing-events
+
+  kong:
+    services:
+      - name: marketing-api
+        url: http://marketing-service.marketing-prod.svc.cluster.local:8080
+        protocol: http
+        retries: 3
+    
+    routes:
+      - name: marketing-public-api
+        service: marketing-api
+        paths:
+          - /api/v1/marketing
+        methods:
+          - GET
+          - POST
+        stripPath: false
+      
+      - name: marketing-admin-api
+        service: marketing-api
+        paths:
+          - /api/v1/marketing/admin
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+    
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          policy: local

@@ -244,7 +244,7 @@ kong:
   
   # Community Edition limits
   communityLimits:
-    maxRoutes: 5
+    maxRoutes: 20
     enabled: true
   
   # External Kong settings (when enabled: false)
