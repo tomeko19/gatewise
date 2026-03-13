@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"github.com/gatewise/gatewise/internal/connector"
+	"github.com/gatewise/gatewise/internal/metrics"
 	"github.com/gatewise/gatewise/internal/policy"
 	"github.com/gatewise/gatewise/internal/reconciler"
 	"github.com/gatewise/gatewise/internal/store"
 	"github.com/gatewise/gatewise/pkg/license"
 	"github.com/gatewise/gatewise/pkg/models"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // Server represents the API server
@@ -67,6 +69,12 @@ func CORSMiddleware() gin.HandlerFunc {
 
 // setupRoutes configures all API routes
 func (s *Server) setupRoutes() {
+	// Prometheus metrics endpoint (outside /api prefix for standard convention)
+	s.router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	
+	// Initialize metrics
+	metrics.InitMetrics()
+	
 	api := s.router.Group("/api")
 	{
 		// Health & Status

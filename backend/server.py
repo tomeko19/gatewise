@@ -1,6 +1,6 @@
 """
 Gatewise Control Plane - Full Featured API
-Supports: Policies, JIT Access, Drift Detection, WebSockets
+Supports: Policies, JIT Access, Drift Detection, WebSockets, Prometheus Metrics
 """
 import os
 import asyncio
@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 import yaml
 
@@ -464,3 +465,54 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_text("pong")
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+
+# ============ Prometheus Metrics ============
+@app.get("/metrics", response_class=PlainTextResponse)
+async def metrics():
+    """Prometheus metrics endpoint"""
+    # Count active JIT grants
+    now = datetime.utcnow()
+    active_jit = sum(1 for g in jit_grants.values() if datetime.fromisoformat(g["expiresAt"].replace("Z", "")) > now)
+    
+    # Count drifts
+    active_drifts = sum(1 for d in drift_events if d["status"] != "repaired")
+    
+    # Determine license tier
+    license_tier = license_state["tier"]
+    tier_value_community = 1 if license_tier == "community" else 0
+    tier_value_enterprise = 1 if license_tier == "enterprise" else 0
+    
+    # Format in Prometheus exposition format
+    metrics_output = f"""# HELP gatewise_policies_total Total number of active policies
+# TYPE gatewise_policies_total gauge
+gatewise_policies_total {len(policies_db)}
+
+# HELP gatewise_jit_grants_active Number of active JIT grants
+# TYPE gatewise_jit_grants_active gauge
+gatewise_jit_grants_active {active_jit}
+
+# HELP gatewise_drifts_detected Number of configuration drifts detected
+# TYPE gatewise_drifts_detected gauge
+gatewise_drifts_detected {active_drifts}
+
+# HELP gatewise_api_requests_total Total number of API requests
+# TYPE gatewise_api_requests_total counter
+gatewise_api_requests_total 0
+
+# HELP gatewise_license_tier Current license tier (0=community, 1=enterprise)
+# TYPE gatewise_license_tier gauge
+gatewise_license_tier{{tier="community"}} {tier_value_community}
+gatewise_license_tier{{tier="enterprise"}} {tier_value_enterprise}
+
+# HELP gatewise_database_connected Database connection status
+# TYPE gatewise_database_connected gauge
+gatewise_database_connected 1
+
+# HELP gatewise_info Gatewise version info
+# TYPE gatewise_info gauge
+gatewise_info{{version="0.3.0-alpha"}} 1
+"""
+    
+    return metrics_output
+

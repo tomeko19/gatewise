@@ -46,6 +46,14 @@ controlPlane:
   license:
     key: ""  # Set to ENT-xxx for Enterprise features
     secretName: ""  # Or reference existing secret
+    tier: "community"  # community or enterprise
+  
+  # Community Edition limits
+  communityLimits:
+    maxPolicies: 5
+    maxClusters: 1
+    jitGrantsPerDay: 2
+    enabled: true
 
 # ============ Agent (In-Cluster) ============
 agent:
@@ -123,6 +131,12 @@ postgresql:
   # Set to false to use external PostgreSQL
   enabled: true
   
+  # Image configuration - Official PostgreSQL (NOT Bitnami - now paid)
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  
   # Embedded PostgreSQL settings (when enabled: true)
   auth:
     username: gatewise
@@ -146,13 +160,52 @@ postgresql:
     existingSecret: ""
     existingSecretKey: "postgresql-password"
 
+# ============ MongoDB (Alternative to PostgreSQL) ============
+mongodb:
+  # Set to true to use MongoDB instead of PostgreSQL
+  enabled: false
+  
+  # Image configuration - Official MongoDB 8+ (NOT Bitnami - now paid)
+  image:
+    repository: mongo
+    tag: "8-jammy"
+    pullPolicy: IfNotPresent
+  
+  auth:
+    enabled: true
+    rootUser: root
+    rootPassword: gatewise123
+    database: gatewise
+  
+  persistence:
+    enabled: true
+    size: 10Gi
+  
+  # External MongoDB settings
+  external:
+    connectionString: ""
+    # Example: "mongodb://user:pass@host:27017/gatewise"
+    existingSecret: ""
+    existingSecretKey: "mongodb-connection-string"
+
 # ============ Kafka (BYOI - Enterprise) ============
 kafka:
   # Set to false to use external Kafka
   enabled: false
   
+  # Image configuration - Official Apache Kafka (NOT Bitnami - now paid)
+  image:
+    repository: apache/kafka
+    tag: "3.6.1"
+    pullPolicy: IfNotPresent
+  
   # Embedded Kafka settings (when enabled: true)
   replicaCount: 1
+  
+  # Community Edition limits
+  communityLimits:
+    maxTopics: 3
+    enabled: true
   
   # External Kafka settings (when enabled: false)
   external:
@@ -176,12 +229,23 @@ kong:
   # Set to false to use external Kong
   enabled: false
   
+  # Image configuration - Official Kong (NOT Bitnami - now paid)
+  image:
+    repository: kong
+    tag: "3.5-alpine"
+    pullPolicy: IfNotPresent
+  
   # Embedded Kong settings (when enabled: true)
   proxy:
     type: LoadBalancer
   admin:
     enabled: true
     type: ClusterIP
+  
+  # Community Edition limits
+  communityLimits:
+    maxRoutes: 5
+    enabled: true
   
   # External Kong settings (when enabled: false)
   external:
@@ -213,14 +277,27 @@ cerbos:
 
 # ============ Monitoring ============
 monitoring:
+  # Prometheus metrics
+  prometheus:
+    enabled: true
+    port: 9090
+    path: /metrics
+  
+  # ServiceMonitor for Prometheus Operator
   serviceMonitor:
     enabled: false
     interval: 30s
     labels: {}
   
+  # Prometheus rules
   prometheusRule:
     enabled: false
     rules: []
+  
+  # Grafana dashboard
+  grafana:
+    enabled: true
+    dashboardConfigMap: gatewise-grafana-dashboard
 
 # ============ Security ============
 security:
